@@ -1,27 +1,21 @@
 #include <unity.h>
-#include <Adafruit_LIS3MDL.h>
+#include <Adafruit_LIS2MDL.h>
 #include "pins.h"
 
 Adafruit_LIS3MDL mag;
 
 // Function to initialize the LIS3MDL sensor for testing
-void setupLIS3MDL() {
+void setupLIS2MDL() {
     if (!mag.begin_SPI(SENSOR_LIS_CS)) {
-        TEST_FAIL_MESSAGE("Failed to initialize LIS3MDL sensor. Check wiring!");
+        TEST_FAIL_MESSAGE("Failed to initialize LIS2MDL sensor. Check wiring!");
     }
 
     // Configure the magnetometer settings
-    mag.setDataRate(LIS3MDL_DATARATE_155_HZ);
-    mag.setRange(LIS3MDL_RANGE_4_GAUSS);
-    mag.setOperationMode(LIS3MDL_CONTINUOUSMODE);
-    mag.setPerformanceMode(LIS3MDL_MEDIUMMODE);
+    mag.setDataRate(LIS2MDL_DATARATE_100_HZ);
 
     // Verify configuration
-    if (mag.getDataRate() != LIS3MDL_DATARATE_155_HZ) {
+    if (mag.getDataRate() != LIS2MDL_DATARATE_100_HZ) {
         TEST_FAIL_MESSAGE("Failed to set data rate!");
-    }
-    if (mag.getRange() != LIS3MDL_RANGE_4_GAUSS) {
-        TEST_FAIL_MESSAGE("Failed to set range!");
     }
 }
 
@@ -60,7 +54,7 @@ void setup() {
     UNITY_BEGIN();
 
     // Initialize the LIS3MDL
-    setupLIS3MDL();
+    setupLIS2MDL();
 
     // Run the test
     RUN_TEST(test_magnetometer_reading);

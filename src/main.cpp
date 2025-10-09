@@ -121,7 +121,6 @@ void setup() {
     delay(10);
   }
   mag.setDataRate(LIS2MDL_RATE_100_HZ);
-  mag.setRange(LIS2MDL_RANGE_4_GAUSS);
 
   if (mag.getDataRate() != LIS2MDL_RATE_100_HZ) {
     Serial.println("Failed to set Mag data rate");
