@@ -7,7 +7,7 @@
   #include "simulation/Serial_Sim.h"
 #else
   #include "Adafruit_LSM6DSOX.h"
-  #include "Adafruit_LIS3MDL.h"
+  #include "Adafruit_LIS2MDL.h"
   #include <Async_BMP3XX.h>
 #endif
 
@@ -34,7 +34,7 @@ float loop_count = 0;
 uint32_t start_time_s = 0;
 
 Adafruit_LSM6DSOX sox;
-Adafruit_LIS3MDL  mag;
+Adafruit_LIS2MDL  mag;
 Adafruit_BMP3XX   bmp;
 
 
@@ -120,12 +120,9 @@ void setup() {
     Serial.println("Could not find sensor. Check wiring.");
     delay(10);
   }
-  mag.setDataRate(LIS3MDL_DATARATE_155_HZ);
-  mag.setRange(LIS3MDL_RANGE_4_GAUSS);
-  mag.setOperationMode(LIS3MDL_CONTINUOUSMODE);
-  mag.setPerformanceMode(LIS3MDL_MEDIUMMODE);
+  mag.setDataRate(LIS2MDL_RATE_100_HZ);
 
-  if (mag.getDataRate() != LIS3MDL_DATARATE_155_HZ) {
+  if (mag.getDataRate() != LIS2MDL_RATE_100_HZ) {
     Serial.println("Failed to set Mag data rate");
   }
 
