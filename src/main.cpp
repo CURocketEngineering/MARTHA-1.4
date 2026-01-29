@@ -2,7 +2,7 @@
 
 #ifdef SIM
   #include "simulation/Serial_Sim_LSM6DSOX.h"
-  #include "simulation/Serial_Sim_LIS3MDL.h"
+  #include "simulation/Serial_Sim_LIS2MDL.h"
   #include "simulation/Serial_Sim_BMP390.h"
   #include "simulation/Serial_Sim.h"
 #else
