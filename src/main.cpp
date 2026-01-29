@@ -280,8 +280,8 @@ void loop() {
   superLoopRate.addData(DataPoint(current_time, loop_count / (millis() / 1000 - start_time_s)));
 
   // Throttle to 100 Hz
-  int too_fast = millis() - current_time;  // current_time was captured at the start of the loop
-  if (too_fast < 10) {
-    delay(10 - too_fast);
+  int loop_time_ms = millis() - current_time;  // current_time was captured at the start of the loop
+  if (loop_time_ms < 10) {
+    delay(10 - loop_time_ms);
   }
 }

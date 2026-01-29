@@ -28,6 +28,8 @@ git submodule update
 ```
 4. Install the PlatformIO VScode extension: `platformio.platformio-ide`
 5. Install the [Cube Programmer](https://www.st.com/en/development-tools/stm32cubeprog.html#get-software) and run it to get all the stm32 drivers you'll need. 
+6. Ensure the C/C++ Microsoft extension is installed in VS code for better intellisense.
+7. Sometimes Intellisense gets disabled. Go to `ctrl+,` and search for `C_Cpp: Intelli Sense Engine` and ensure it's set to `Default`. This will give you better autocomplete and refactoring tools.
 
 ### Unity Testing Setup
 1. Run the test within the pio terminal with `pio test -e martha_stm --without-testing` this will flash the test script onto the board.
