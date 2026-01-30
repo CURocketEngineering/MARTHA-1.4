@@ -11,7 +11,30 @@
 #include "flash_config.h"
 
 #define TEST_ADDRESS 0x00010000 // Example address for testing
-#define TEST_DATA 0xA5         // Example test data pattern
+#define TEST_DATA    0xA5       // Example test data pattern
+
+// Keep test lengths modest for bring-up
+static constexpr uint32_t kTestLen = 64;
+
+// Page-boundary test: write that crosses a page boundary
+// This assumes SFLASH_PAGE_SIZE is defined (common: 256).
+#define PAGE_CROSS_ADDR (TEST_ADDRESS + (SFLASH_PAGE_SIZE - 8))
+static constexpr uint32_t kPageCrossLen = 16;
+
+// Second sector test to exercise higher address bits
+#define TEST_ADDRESS_2 (TEST_ADDRESS + SFLASH_SECTOR_SIZE)
+
+static void fill_pattern(uint8_t* buf, uint32_t len, uint8_t seed) {
+  for (uint32_t i = 0; i < len; i++) {
+    buf[i] = (uint8_t)(seed ^ (uint8_t)i ^ (uint8_t)(i * 31));
+  }
+}
+
+static void assert_buf_eq(const uint8_t* a, const uint8_t* b, uint32_t len) {
+  for (uint32_t i = 0; i < len; i++) {
+    TEST_ASSERT_EQUAL_HEX8(a[i], b[i]);
+  }
+}
 
 Adafruit_SPIFlash flash(&flashTransport);
 
@@ -108,6 +131,8 @@ void setup() {
     RUN_TEST(test_flash_correct_JEDEC_ID);
     RUN_TEST(test_flash_size_greater_than_zero);
     RUN_TEST(test_flash_write_read);
+    RUN_TEST(test_flash_cannot_program_zeros_back_to_ones_without_erase);
+    RUN_TEST(test_flash_two_sectors_independent);
 
     Serial.println("Adafruit Serial Flash Info example");
     uint32_t jedec_id = flash.getJEDECID();
