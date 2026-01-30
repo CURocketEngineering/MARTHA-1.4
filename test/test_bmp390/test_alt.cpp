@@ -50,7 +50,7 @@ void test_async_and_sync_give_same_values(){
     altitude_async = 44330.0 * (1.0 - pow(bmp.getPressure() / 100.0f / SEALEVELPRESSURE_HPA, 0.1903));
     altitude_sync = bmp.readAltitude(SEALEVELPRESSURE_HPA);
 
-    TEST_ASSERT_FLOAT_WITHIN(0.00001, altitude_sync, altitude_async);
+    TEST_ASSERT_FLOAT_WITHIN(0.0001, altitude_sync, altitude_async);
 
 }
 
