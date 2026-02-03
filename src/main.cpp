@@ -18,9 +18,12 @@
 #include "data_handling/SensorDataHandler.h"
 #include "data_handling/DataSaverSPI.h"
 #include "data_handling/DataNames.h"
+#include "data_handling/Telemetry.h"
 #include "flash_config.h"
 #include "state_estimation/LaunchDetector.h"
 #include "state_estimation/ApogeeDetector.h"
+#include "state_estimation/VerticalVelocityEstimator.h"
+#include "state_estimation/ApogeePredictor.h"
 #include "state_estimation/States.h"
 #include "state_estimation/StateMachine.h"
 
@@ -58,7 +61,10 @@ SensorDataHandler yMagData(MAGNETOMETER_Y, &dataSaver);
 SensorDataHandler zMagData(MAGNETOMETER_Z, &dataSaver);
 
 SensorDataHandler superLoopRate(AVERAGE_CYCLE_RATE, &dataSaver);
+int telemetryPacketCounter = 1;
+SensorDataHandler telemetryPacketsSent(NUM_PACKETS_SENT, &dataSaver);
 SensorDataHandler stateChange(STATE_CHANGE, &dataSaver);
+SensorDataHandler currentState(CURRENT_STATE, &dataSaver);
 SensorDataHandler flightIDSaver(FLIGHT_ID, &dataSaver);
 float flightID;
 
@@ -68,10 +74,43 @@ VerticalVelocityEstimator verticalVelocityEstimator(noiseVariances);
 
 LaunchDetector launchDetector(40, 500, 25);
 ApogeeDetector apogeeDetector(1.0f);
+
+ApogeePredictor apogeePredictor(verticalVelocityEstimator);
+SensorDataHandler apogeeEstData(EST_APOGEE, &dataSaver);
+
 StateMachine stateMachine(&dataSaver, &launchDetector, &apogeeDetector, &verticalVelocityEstimator);
+
+SendableSensorData telemetryPacketsSentSSD(&telemetryPacketsSent, nullptr, 0, 0, 2); //sendFrequencyHz of this ssd must be the fastest frequency of any other packet sent below
+SendableSensorData aclDataSSD(nullptr, (SensorDataHandler*[]) {&xAclData, &yAclData, &zAclData}, 3, 102, 2);
+SendableSensorData gyroDataSSD(nullptr, (SensorDataHandler*[]) {&xGyroData, &yGyroData, &zGyroData}, 3, 105, 2);
+SendableSensorData altitudeDataSSD(&altitudeData, nullptr, 0, 0, 2);
+SendableSensorData apogeeEstDataSSD(&apogeeEstData, nullptr, 0, 0, 2);
+SendableSensorData tempDataSSD(&tempData, nullptr, 0, 0, 1);
+SendableSensorData pressureDataSSD(&pressureData, nullptr, 0, 0, 1);
+SendableSensorData magDataSSD(nullptr, (SensorDataHandler*[]) {&xMagData, &yMagData, &zMagData}, 3, 111, 1);
+SendableSensorData superLoopRateSSD(&superLoopRate, nullptr, 0, 1, 1);
+SendableSensorData stateChangeSSD(&stateChange, nullptr, 0, 1, 1);
+SendableSensorData currentStateSSD(&currentState, nullptr, 0, 1, 1);
+SendableSensorData flightIDSaverSSD(&flightIDSaver, nullptr, 0, 1, 1);
+
+SendableSensorData* ssds[] {
+  &telemetryPacketsSentSSD,
+  &aclDataSSD,
+  &gyroDataSSD,
+  &altitudeDataSSD,
+  &apogeeEstDataSSD,
+  &tempDataSSD,
+  &pressureDataSSD,
+  &magDataSSD,
+  &superLoopRateSSD,
+  &stateChangeSSD,
+  &currentStateSSD,
+  &flightIDSaverSSD,
+};
 
 CommandLine cmdLine(&Serial);
 HardwareSerial SUART1(PB7, PB6);
+Telemetry telemetry(ssds, 10, SUART1);
 
 #include "commands.h"
 
@@ -165,6 +204,9 @@ void setup() {
   superLoopRate.restrictSaveSpeed(1000);
   altitudeData.restrictSaveSpeed(10); // Save altitude every 10 ms (100hz)
   flightIDSaver.restrictSaveSpeed(10000);
+  apogeeEstData.restrictSaveSpeed(10);
+  currentState.restrictSaveSpeed(2000);
+  telemetryPacketsSent.restrictSaveSpeed(1000);
 
 
   // Loop start time
@@ -267,17 +309,30 @@ void loop() {
   );
 
 
-  if (stateMachine.getState() > STATE_ASCENT) {
+  if (stateMachine.getState() >= STATE_ASCENT) {
     led_toggle_delay = 50;
-  } else if (stateMachine.getState() > STATE_ARMED || dataSaver.quickGetPostLaunchMode()) {
-    led_toggle_delay = 100;
+  // } else if (stateMachine.getState() == STATE_SOFT_ASCENT) {
+  //   led_toggle_delay = 200;
+  } else if (stateMachine.getState() <= STATE_ARMED){
+    led_toggle_delay = 1000;
   }
 
+  // If post-launch, then start saving estimated apogee data
+  if (stateMachine.getState() >= STATE_ASCENT) {
+    apogeePredictor.poly_update();
+    apogeeEstData.addData(DataPoint(current_time, apogeePredictor.getPredictedApogeeAltitude_m()));
+  }
+  
   xGyroData.addData(DataPoint(current_time, gyro.gyro.x));
   yGyroData.addData(DataPoint(current_time, gyro.gyro.y));
   zGyroData.addData(DataPoint(current_time, gyro.gyro.z));
 
   superLoopRate.addData(DataPoint(current_time, loop_count / (millis() / 1000 - start_time_s)));
+  currentState.addData(DataPoint(current_time, stateMachine.getState()));
+
+  telemetryPacketsSent.addData(DataPoint(current_time, telemetryPacketCounter));
+
+  if (telemetry.tick(current_time)) telemetryPacketCounter+=1;
 
   // Throttle to 100 Hz
   int loop_time_ms = millis() - current_time;  // current_time was captured at the start of the loop
