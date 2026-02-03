@@ -277,6 +277,10 @@ void loop() {
     led_toggle_delay = 1000;
   }
 
+  if (dataSaver.quickGetPostLaunchMode()){
+    led_toggle_delay = 100; // Fast blink in post-launch mode and needs clear_plm before relaunch
+  }
+
   xGyroData.addData(DataPoint(current_time, gyro.gyro.x));
   yGyroData.addData(DataPoint(current_time, gyro.gyro.y));
   zGyroData.addData(DataPoint(current_time, gyro.gyro.z));
