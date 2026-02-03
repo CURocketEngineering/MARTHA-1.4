@@ -2,7 +2,7 @@
 #include <Adafruit_LIS2MDL.h>
 #include "pins.h"
 
-Adafruit_LIS3MDL mag;
+Adafruit_LIS2MDL mag;
 
 // Function to initialize the LIS3MDL sensor for testing
 void setupLIS2MDL() {
@@ -11,10 +11,10 @@ void setupLIS2MDL() {
     }
 
     // Configure the magnetometer settings
-    mag.setDataRate(LIS2MDL_DATARATE_100_HZ);
+    mag.setDataRate(LIS2MDL_RATE_100_HZ);
 
     // Verify configuration
-    if (mag.getDataRate() != LIS2MDL_DATARATE_100_HZ) {
+    if (mag.getDataRate() != LIS2MDL_RATE_100_HZ) {
         TEST_FAIL_MESSAGE("Failed to set data rate!");
     }
 }
