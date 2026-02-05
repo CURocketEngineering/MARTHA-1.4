@@ -81,9 +81,9 @@ SensorDataHandler apogeeEstData(EST_APOGEE, &dataSaver);
 StateMachine stateMachine(&dataSaver, &launchDetector, &apogeeDetector, &verticalVelocityEstimator);
 
 SendableSensorData telemetryPacketsSentSSD(&telemetryPacketsSent, nullptr, 0, 0, 2); //sendFrequencyHz of this ssd must be the fastest frequency of any other packet sent below
-SendableSensorData aclDataSSD(nullptr, (SensorDataHandler*[]) {&xAclData, &yAclData, &zAclData}, 3, 102, 2);
-SendableSensorData gyroDataSSD(nullptr, (SensorDataHandler*[]) {&xGyroData, &yGyroData, &zGyroData}, 3, 105, 2);
-SendableSensorData altitudeDataSSD(&altitudeData, nullptr, 0, 0, 2);
+SendableSensorData aclDataSSD((SensorDataHandler*[]) {&xAclData, &yAclData, &zAclData}, 3, 102, 2);
+SendableSensorData gyroDataSSD((SensorDataHandler*[]) {&xGyroData, &yGyroData, &zGyroData}, 3, 105, 2);
+SendableSensorData altitudeDataSSD(&altitudeData, 0, 0, 2);
 SendableSensorData apogeeEstDataSSD(&apogeeEstData, nullptr, 0, 0, 2);
 SendableSensorData tempDataSSD(&tempData, nullptr, 0, 0, 1);
 SendableSensorData pressureDataSSD(&pressureData, nullptr, 0, 0, 1);
