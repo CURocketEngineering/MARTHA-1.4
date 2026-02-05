@@ -21,6 +21,7 @@
 #include "data_handling/Telemetry.h"
 #include "flash_config.h"
 #include "state_estimation/LaunchDetector.h"
+#include "state_estimation/FastLaunchDetector.h"
 #include "state_estimation/ApogeeDetector.h"
 #include "state_estimation/VerticalVelocityEstimator.h"
 #include "state_estimation/ApogeePredictor.h"
@@ -73,12 +74,9 @@ NoiseVariances noiseVariances {0.25f, 1.0f}; // Example variances
 VerticalVelocityEstimator verticalVelocityEstimator(noiseVariances);
 
 LaunchDetector launchDetector(40, 500, 25);
+FastLaunchDetector fastLaunchDetector(30, 500);
 ApogeeDetector apogeeDetector(1.0f);
-
-ApogeePredictor apogeePredictor(verticalVelocityEstimator);
-SensorDataHandler apogeeEstData(EST_APOGEE, &dataSaver);
-
-StateMachine stateMachine(&dataSaver, &launchDetector, &apogeeDetector, &verticalVelocityEstimator);
+StateMachine stateMachine(&dataSaver, &launchDetector, &apogeeDetector, &verticalVelocityEstimator, &fastLaunchDetector);
 
 SendableSensorData telemetryPacketsSentSSD(&telemetryPacketsSent, nullptr, 0, 0, 2); //sendFrequencyHz of this ssd must be the fastest frequency of any other packet sent below
 SendableSensorData aclDataSSD((SensorDataHandler*[]) {&xAclData, &yAclData, &zAclData}, 3, 102, 2);
@@ -311,10 +309,14 @@ void loop() {
 
   if (stateMachine.getState() >= STATE_ASCENT) {
     led_toggle_delay = 50;
-  // } else if (stateMachine.getState() == STATE_SOFT_ASCENT) {
-  //   led_toggle_delay = 200;
+  } else if (stateMachine.getState() == STATE_SOFT_ASCENT) {
+    led_toggle_delay = 200;
   } else if (stateMachine.getState() <= STATE_ARMED){
     led_toggle_delay = 1000;
+  }
+
+  if (dataSaver.quickGetPostLaunchMode()){
+    led_toggle_delay = 100; // Fast blink in post-launch mode and needs clear_plm before relaunch
   }
 
   // If post-launch, then start saving estimated apogee data
