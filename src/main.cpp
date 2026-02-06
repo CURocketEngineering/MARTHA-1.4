@@ -15,6 +15,7 @@
 #include "pins.h"
 #include "UARTCommandHandler.h"
 
+#include "PowerManagement.h"
 #include "data_handling/SensorDataHandler.h"
 #include "data_handling/DataSaverSPI.h"
 #include "data_handling/DataNames.h"
@@ -36,6 +37,7 @@ uint32_t start_time_s = 0;
 Adafruit_LSM6DSOX sox;
 Adafruit_LIS2MDL  mag;
 Adafruit_BMP3XX   bmp;
+BatteryVoltage adcVolt(ADC_VOLTAGE, 134.33333f, 12);
 
 
 Adafruit_SPIFlash flash(&flashTransport);
@@ -57,6 +59,8 @@ DataPoint altDataPoint;
 SensorDataHandler xMagData(MAGNETOMETER_X, &dataSaver);
 SensorDataHandler yMagData(MAGNETOMETER_Y, &dataSaver);
 SensorDataHandler zMagData(MAGNETOMETER_Z, &dataSaver);
+
+SensorDataHandler voltageData(BATTERY_VOLTAGE, &dataSaver);
 
 SensorDataHandler superLoopRate(AVERAGE_CYCLE_RATE, &dataSaver);
 SensorDataHandler stateChange(STATE_CHANGE, &dataSaver);
@@ -167,7 +171,7 @@ void setup() {
   superLoopRate.restrictSaveSpeed(1000);
   altitudeData.restrictSaveSpeed(10); // Save altitude every 10 ms (100hz)
   flightIDSaver.restrictSaveSpeed(10000);
-
+  voltageData.restrictSaveSpeed(100);
 
   // Loop start time
   start_time_s = millis() / 1000;
@@ -284,6 +288,10 @@ void loop() {
   xGyroData.addData(DataPoint(current_time, gyro.gyro.x));
   yGyroData.addData(DataPoint(current_time, gyro.gyro.y));
   zGyroData.addData(DataPoint(current_time, gyro.gyro.z));
+
+  // Read and save battery voltage
+  float voltage = adcVolt.readVoltage();
+  voltageData.addData(DataPoint(current_time, voltage));
 
   superLoopRate.addData(DataPoint(current_time, loop_count / (millis() / 1000 - start_time_s)));
 
