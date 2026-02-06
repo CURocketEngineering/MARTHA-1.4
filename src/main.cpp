@@ -76,22 +76,31 @@ VerticalVelocityEstimator verticalVelocityEstimator(noiseVariances);
 LaunchDetector launchDetector(40, 500, 25);
 FastLaunchDetector fastLaunchDetector(30, 500);
 ApogeeDetector apogeeDetector(1.0f);
+
+ApogeePredictor apogeePredictor(verticalVelocityEstimator);
+SensorDataHandler apogeeEstData(EST_APOGEE, &dataSaver);
+
 StateMachine stateMachine(&dataSaver, &launchDetector, &apogeeDetector, &verticalVelocityEstimator, &fastLaunchDetector);
 
-SendableSensorData telemetryPacketsSentSSD(&telemetryPacketsSent, nullptr, 0, 0, 2); //sendFrequencyHz of this ssd must be the fastest frequency of any other packet sent below
-SendableSensorData aclDataSSD((SensorDataHandler*[]) {&xAclData, &yAclData, &zAclData}, 3, 102, 2);
-SendableSensorData gyroDataSSD((SensorDataHandler*[]) {&xGyroData, &yGyroData, &zGyroData}, 3, 105, 2);
-SendableSensorData altitudeDataSSD(&altitudeData, 0, 0, 2);
-SendableSensorData apogeeEstDataSSD(&apogeeEstData, nullptr, 0, 0, 2);
-SendableSensorData tempDataSSD(&tempData, nullptr, 0, 0, 1);
-SendableSensorData pressureDataSSD(&pressureData, nullptr, 0, 0, 1);
-SendableSensorData magDataSSD(nullptr, (SensorDataHandler*[]) {&xMagData, &yMagData, &zMagData}, 3, 111, 1);
-SendableSensorData superLoopRateSSD(&superLoopRate, nullptr, 0, 1, 1);
-SendableSensorData stateChangeSSD(&stateChange, nullptr, 0, 1, 1);
-SendableSensorData currentStateSSD(&currentState, nullptr, 0, 1, 1);
-SendableSensorData flightIDSaverSSD(&flightIDSaver, nullptr, 0, 1, 1);
 
-SendableSensorData* ssds[] {
+const std::array<SensorDataHandler*, 3> acclDataArray = {&xAclData, &yAclData, &zAclData};
+const std::array<SensorDataHandler*, 3> gyroDataArray = {&xGyroData, &yGyroData, &zGyroData};
+const std::array<SensorDataHandler*, 3> magDataArray = {&xMagData, &yMagData, &zMagData};
+
+SendableSensorData telemetryPacketsSentSSD(&telemetryPacketsSent, 2); //sendFrequencyHz of this ssd must be the fastest frequency of any other packet sent below
+SendableSensorData aclDataSSD(acclDataArray, 102, 2);
+SendableSensorData gyroDataSSD(gyroDataArray, 105, 2);
+SendableSensorData altitudeDataSSD(&altitudeData, 2);
+SendableSensorData apogeeEstDataSSD(&apogeeEstData, 2);
+SendableSensorData tempDataSSD(&tempData, 1);
+SendableSensorData pressureDataSSD(&pressureData, 1);
+SendableSensorData magDataSSD(magDataArray, 111, 1);
+SendableSensorData superLoopRateSSD(&superLoopRate, 1);
+SendableSensorData stateChangeSSD(&stateChange, 1);
+SendableSensorData currentStateSSD(&currentState, 1);
+SendableSensorData flightIDSaverSSD(&flightIDSaver, 1);
+
+const std::array <SendableSensorData*, 12> ssds = {
   &telemetryPacketsSentSSD,
   &aclDataSSD,
   &gyroDataSSD,
@@ -108,7 +117,9 @@ SendableSensorData* ssds[] {
 
 CommandLine cmdLine(&Serial);
 HardwareSerial SUART1(PB7, PB6);
-Telemetry telemetry(ssds, 10, SUART1);
+
+// Stream 
+Telemetry telemetry(ssds, SUART1);
 
 #include "commands.h"
 
