@@ -4,8 +4,6 @@
 
 <img src="assets/MARTHA1.4.png" width="300" align="right" />
 
-## What is the MARTHA repo for?
-
 
 MARTHA (Miniaturized Avionics for Rapid Testing Handling and Assessment) is our
 all-in-one flight computer for data collection and flight stage prediction. 
