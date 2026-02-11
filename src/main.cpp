@@ -349,7 +349,7 @@ void loop() {
   currentState.addData(DataPoint(current_time, stateMachine.getState()));
 
 
-  if (telemetry.tick(current_time));
+  telemetry.tick(current_time);
 
   // Throttle to 100 Hz
   int loop_time_ms = millis() - current_time;  // current_time was captured at the start of the loop
