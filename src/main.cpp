@@ -15,7 +15,6 @@
 #include "pins.h"
 #include "UARTCommandHandler.h"
 
-#include "PowerManagement.h"
 #include "data_handling/SensorDataHandler.h"
 #include "data_handling/DataSaverSPI.h"
 #include "data_handling/DataNames.h"
@@ -27,7 +26,7 @@
 #include "state_estimation/VerticalVelocityEstimator.h"
 #include "state_estimation/ApogeePredictor.h"
 #include "state_estimation/States.h"
-#include "state_estimation/StateMachine.h"
+#include "state_estimation/StateMachine.h" 
 
 #define SEALEVELPRESSURE_HPA (1013.25)
 
@@ -40,8 +39,6 @@ uint32_t start_time_s = 0;
 Adafruit_LSM6DSOX sox;
 Adafruit_LIS2MDL  mag;
 Adafruit_BMP3XX   bmp;
-BatteryVoltage adcVolt(ADC_VOLTAGE, 134.33333f, 12, 7.0f); // Below 7 volts is considered low battery
-
 
 Adafruit_SPIFlash flash(&flashTransport);
 DataSaverSPI dataSaver(10, &flash); // Save data every 10 ms
@@ -62,8 +59,6 @@ DataPoint altDataPoint;
 SensorDataHandler xMagData(MAGNETOMETER_X, &dataSaver);
 SensorDataHandler yMagData(MAGNETOMETER_Y, &dataSaver);
 SensorDataHandler zMagData(MAGNETOMETER_Z, &dataSaver);
-
-SensorDataHandler voltageData(BATTERY_VOLTAGE, &dataSaver);
 
 SensorDataHandler superLoopRate(AVERAGE_CYCLE_RATE, &dataSaver);
 int telemetryPacketCounter = 1;
@@ -221,7 +216,6 @@ void setup() {
   currentState.restrictSaveSpeed(2000);
   telemetryPacketsSent.restrictSaveSpeed(1000);
 
-  voltageData.restrictSaveSpeed(100);
 
   // Loop start time
   start_time_s = millis() / 1000;
@@ -344,10 +338,6 @@ void loop() {
   xGyroData.addData(DataPoint(current_time, gyro.gyro.x));
   yGyroData.addData(DataPoint(current_time, gyro.gyro.y));
   zGyroData.addData(DataPoint(current_time, gyro.gyro.z));
-
-  // Read and save battery voltage
-  float voltage = adcVolt.readVoltage();
-  voltageData.addData(DataPoint(current_time, voltage));
 
   superLoopRate.addData(DataPoint(current_time, loop_count / (millis() / 1000 - start_time_s)));
   currentState.addData(DataPoint(current_time, stateMachine.getState()));
