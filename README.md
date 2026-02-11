@@ -2,7 +2,7 @@
 
 ## What is the MARTHA repo for? 
 
-<img src="assets/MARTHA1.4.png" width="300" align="right" />
+<img src="assets/MARTHA1.4.png" width="250" align="right" />
 
 
 MARTHA (Miniaturized Avionics for Rapid Testing Handling and Assessment) is our
