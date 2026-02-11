@@ -61,8 +61,7 @@ SensorDataHandler yMagData(MAGNETOMETER_Y, &dataSaver);
 SensorDataHandler zMagData(MAGNETOMETER_Z, &dataSaver);
 
 SensorDataHandler superLoopRate(AVERAGE_CYCLE_RATE, &dataSaver);
-int telemetryPacketCounter = 1;
-SensorDataHandler telemetryPacketsSent(NUM_PACKETS_SENT, &dataSaver);
+
 SensorDataHandler stateChange(STATE_CHANGE, &dataSaver);
 SensorDataHandler currentState(CURRENT_STATE, &dataSaver);
 SensorDataHandler flightIDSaver(FLIGHT_ID, &dataSaver);
@@ -86,10 +85,9 @@ const std::array<SensorDataHandler*, 3> acclDataArray = {&xAclData, &yAclData, &
 const std::array<SensorDataHandler*, 3> gyroDataArray = {&xGyroData, &yGyroData, &zGyroData};
 const std::array<SensorDataHandler*, 3> magDataArray = {&xMagData, &yMagData, &zMagData};
 
-SendableSensorData telemetryPacketsSentSSD(&telemetryPacketsSent, 2); //sendFrequencyHz of this ssd must be the fastest frequency of any other packet sent below
-SendableSensorData aclDataSSD(acclDataArray, 102, 2);
+SendableSensorData aclDataSSD(acclDataArray, 102, 10);
 SendableSensorData gyroDataSSD(gyroDataArray, 105, 2);
-SendableSensorData altitudeDataSSD(&altitudeData, 2);
+SendableSensorData altitudeDataSSD(&altitudeData, 10);
 SendableSensorData apogeeEstDataSSD(&apogeeEstData, 2);
 SendableSensorData tempDataSSD(&tempData, 1);
 SendableSensorData pressureDataSSD(&pressureData, 1);
@@ -99,8 +97,7 @@ SendableSensorData stateChangeSSD(&stateChange, 1);
 SendableSensorData currentStateSSD(&currentState, 1);
 SendableSensorData flightIDSaverSSD(&flightIDSaver, 1);
 
-const std::array <SendableSensorData*, 12> ssds = {
-  &telemetryPacketsSentSSD,
+const std::array <SendableSensorData*, 11> ssds = {
   &aclDataSSD,
   &gyroDataSSD,
   &altitudeDataSSD,
@@ -214,7 +211,6 @@ void setup() {
   flightIDSaver.restrictSaveSpeed(10000);
   apogeeEstData.restrictSaveSpeed(10);
   currentState.restrictSaveSpeed(2000);
-  telemetryPacketsSent.restrictSaveSpeed(1000);
 
 
   // Loop start time
@@ -342,9 +338,8 @@ void loop() {
   superLoopRate.addData(DataPoint(current_time, loop_count / (millis() / 1000 - start_time_s)));
   currentState.addData(DataPoint(current_time, stateMachine.getState()));
 
-  telemetryPacketsSent.addData(DataPoint(current_time, telemetryPacketCounter));
 
-  if (telemetry.tick(current_time)) telemetryPacketCounter+=1;
+  if (telemetry.tick(current_time));
 
   // Throttle to 100 Hz
   int loop_time_ms = millis() - current_time;  // current_time was captured at the start of the loop
