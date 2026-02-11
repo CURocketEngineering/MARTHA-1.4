@@ -13,6 +13,7 @@
 #define SENSOR_LIS_CS PA2
 #define FLASH_CS PB1
 #define DEBUG_LED PA9
+#define ADC_VOLTAGE PA0
 
 // For the Adafruit SPI Flash
 #define EXTERNAL_FLASH_USE_CS PB1
