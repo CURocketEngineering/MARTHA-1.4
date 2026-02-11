@@ -27,6 +27,7 @@
 #include "state_estimation/ApogeePredictor.h"
 #include "state_estimation/States.h"
 #include "state_estimation/StateMachine.h" 
+#include "PowerManagement.h"
 
 #define SEALEVELPRESSURE_HPA (1013.25)
 
@@ -40,6 +41,8 @@ Adafruit_LSM6DSOX sox;
 Adafruit_LIS2MDL  mag;
 Adafruit_BMP3XX   bmp;
 
+BatteryVoltage adcVolt(ADC_VOLTAGE, 134.33333f, 12, 7.0f); // Below 7 volts is considered low battery
+
 Adafruit_SPIFlash flash(&flashTransport);
 DataSaverSPI dataSaver(10, &flash); // Save data every 10 ms
 
@@ -50,6 +53,8 @@ SensorDataHandler zAclData(ACCELEROMETER_Z, &dataSaver);
 SensorDataHandler xGyroData(GYROSCOPE_X, &dataSaver);
 SensorDataHandler yGyroData(GYROSCOPE_Y, &dataSaver);
 SensorDataHandler zGyroData(GYROSCOPE_Z, &dataSaver);
+
+SensorDataHandler voltageData(BATTERY_VOLTAGE, &dataSaver);
 
 SensorDataHandler tempData(TEMPERATURE, &dataSaver);
 SensorDataHandler pressureData(PRESSURE, &dataSaver);
@@ -211,6 +216,7 @@ void setup() {
   flightIDSaver.restrictSaveSpeed(10000);
   apogeeEstData.restrictSaveSpeed(10);
   currentState.restrictSaveSpeed(2000);
+  voltageData.restrictSaveSpeed(100);
 
 
   // Loop start time
@@ -334,6 +340,10 @@ void loop() {
   xGyroData.addData(DataPoint(current_time, gyro.gyro.x));
   yGyroData.addData(DataPoint(current_time, gyro.gyro.y));
   zGyroData.addData(DataPoint(current_time, gyro.gyro.z));
+
+  // Read and save battery voltage
+  float voltage = adcVolt.readVoltage();
+  voltageData.addData(DataPoint(current_time, voltage));
 
   superLoopRate.addData(DataPoint(current_time, loop_count / (millis() / 1000 - start_time_s)));
   currentState.addData(DataPoint(current_time, stateMachine.getState()));
