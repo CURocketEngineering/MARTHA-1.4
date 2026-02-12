@@ -37,7 +37,7 @@ uint32_t start_time_s = 0;
 Adafruit_LSM6DSOX sox;
 Adafruit_LIS2MDL  mag;
 Adafruit_BMP3XX   bmp;
-BatteryVoltage adcVolt(ADC_VOLTAGE, 134.33333f, 12, 1.0f);
+BatteryVoltage adcVolt(ADC_VOLTAGE, 134.33333f, 12, 7.0f); // Below 7 volts is considered low battery
 
 
 Adafruit_SPIFlash flash(&flashTransport);
