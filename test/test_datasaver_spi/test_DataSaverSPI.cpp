@@ -67,6 +67,7 @@ void test_data_saver_begin() {
 
 void test_save_data_point() {
     dataSaver.clearPostLaunchMode();
+    dataSaver.clearInternalState();
     DataPoint dp = {100, 50}; // Example DataPoint: timestamp = 100ms, value = 50
     unsigned long start_time = millis();
     TEST_ASSERT_EQUAL(0, dataSaver.saveDataPoint(dp, 1)); // 1 as name/ID
@@ -102,6 +103,7 @@ void test_flush_buffer_count(){
 void test_post_launch_mode() {
     unsigned long start_time = millis();
     dataSaver.clearPostLaunchMode();
+    dataSaver.clearInternalState();
 
     TEST_ASSERT_EQUAL(false, dataSaver.isPostLaunchMode());
     TEST_ASSERT_EQUAL(false, dataSaver.quickGetPostLaunchMode());
@@ -114,6 +116,7 @@ void test_post_launch_mode() {
     TEST_ASSERT_EQUAL(0, dataSaver.saveDataPoint(dp, 1));
     // Check post-launch flag persistence
     dataSaver.clearPostLaunchMode();
+    dataSaver.clearInternalState();
     TEST_ASSERT_EQUAL(false, dataSaver.isPostLaunchMode());
     Serial.printf("test_post_launch_mode execution time: %lu ms\n", millis() - start_time);
 }
