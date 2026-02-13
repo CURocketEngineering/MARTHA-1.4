@@ -35,6 +35,7 @@ void ping(std::queue<std::string> arguments, std::string& response) {
 
 void clearPostLaunchMode(std::queue<std::string> arguments, std::string& response) {
     dataSaver.clearPostLaunchMode();
+    dataSaver.clearInternalState();
     launchDetector.reset(); // fibo
     cmdLine.println("Cleared post launch mode, reboot the device to complete the reset.");
 }
