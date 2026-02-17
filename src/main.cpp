@@ -15,16 +15,19 @@
 #include "pins.h"
 #include "UARTCommandHandler.h"
 
-#include "PowerManagement.h"
 #include "data_handling/SensorDataHandler.h"
 #include "data_handling/DataSaverSPI.h"
 #include "data_handling/DataNames.h"
+#include "data_handling/Telemetry.h"
 #include "flash_config.h"
 #include "state_estimation/LaunchDetector.h"
 #include "state_estimation/FastLaunchDetector.h"
 #include "state_estimation/ApogeeDetector.h"
+#include "state_estimation/VerticalVelocityEstimator.h"
+#include "state_estimation/ApogeePredictor.h"
 #include "state_estimation/States.h"
-#include "state_estimation/StateMachine.h"
+#include "state_estimation/StateMachine.h" 
+#include "PowerManagement.h"
 
 #define SEALEVELPRESSURE_HPA (1013.25)
 
@@ -37,8 +40,8 @@ uint32_t start_time_s = 0;
 Adafruit_LSM6DSOX sox;
 Adafruit_LIS2MDL  mag;
 Adafruit_BMP3XX   bmp;
-BatteryVoltage adcVolt(ADC_VOLTAGE, 134.33333f, 12, 7.0f); // Below 7 volts is considered low battery
 
+BatteryVoltage adcVolt(ADC_VOLTAGE, 134.33333f, 12, 7.0f); // Below 7 volts is considered low battery
 
 Adafruit_SPIFlash flash(&flashTransport);
 DataSaverSPI dataSaver(10, &flash); // Save data every 10 ms
@@ -51,6 +54,8 @@ SensorDataHandler xGyroData(GYROSCOPE_X, &dataSaver);
 SensorDataHandler yGyroData(GYROSCOPE_Y, &dataSaver);
 SensorDataHandler zGyroData(GYROSCOPE_Z, &dataSaver);
 
+SensorDataHandler voltageData(BATTERY_VOLTAGE, &dataSaver);
+
 SensorDataHandler tempData(TEMPERATURE, &dataSaver);
 SensorDataHandler pressureData(PRESSURE, &dataSaver);
 SensorDataHandler altitudeData(ALTITUDE, &dataSaver);
@@ -60,10 +65,10 @@ SensorDataHandler xMagData(MAGNETOMETER_X, &dataSaver);
 SensorDataHandler yMagData(MAGNETOMETER_Y, &dataSaver);
 SensorDataHandler zMagData(MAGNETOMETER_Z, &dataSaver);
 
-SensorDataHandler voltageData(BATTERY_VOLTAGE, &dataSaver);
-
 SensorDataHandler superLoopRate(AVERAGE_CYCLE_RATE, &dataSaver);
+
 SensorDataHandler stateChange(STATE_CHANGE, &dataSaver);
+SensorDataHandler currentState(CURRENT_STATE, &dataSaver);
 SensorDataHandler flightIDSaver(FLIGHT_ID, &dataSaver);
 float flightID;
 
@@ -74,10 +79,48 @@ VerticalVelocityEstimator verticalVelocityEstimator(noiseVariances);
 LaunchDetector launchDetector(40, 500, 25);
 FastLaunchDetector fastLaunchDetector(30, 500);
 ApogeeDetector apogeeDetector(1.0f);
+
+ApogeePredictor apogeePredictor(verticalVelocityEstimator);
+SensorDataHandler apogeeEstData(EST_APOGEE, &dataSaver);
+
 StateMachine stateMachine(&dataSaver, &launchDetector, &apogeeDetector, &verticalVelocityEstimator, &fastLaunchDetector);
+
+
+const std::array<SensorDataHandler*, 3> acclDataArray = {&xAclData, &yAclData, &zAclData};
+const std::array<SensorDataHandler*, 3> gyroDataArray = {&xGyroData, &yGyroData, &zGyroData};
+const std::array<SensorDataHandler*, 3> magDataArray = {&xMagData, &yMagData, &zMagData};
+
+SendableSensorData aclDataSSD(acclDataArray, 102, 10);
+SendableSensorData gyroDataSSD(gyroDataArray, 105, 2);
+SendableSensorData altitudeDataSSD(&altitudeData, 10);
+SendableSensorData apogeeEstDataSSD(&apogeeEstData, 2);
+SendableSensorData tempDataSSD(&tempData, 1);
+SendableSensorData pressureDataSSD(&pressureData, 1);
+SendableSensorData magDataSSD(magDataArray, 111, 1);
+SendableSensorData superLoopRateSSD(&superLoopRate, 1);
+SendableSensorData stateChangeSSD(&stateChange, 1);
+SendableSensorData currentStateSSD(&currentState, 1);
+SendableSensorData flightIDSaverSSD(&flightIDSaver, 1);
+
+const std::array <SendableSensorData*, 11> ssds = {
+  &aclDataSSD,
+  &gyroDataSSD,
+  &altitudeDataSSD,
+  &apogeeEstDataSSD,
+  &tempDataSSD,
+  &pressureDataSSD,
+  &magDataSSD,
+  &superLoopRateSSD,
+  &stateChangeSSD,
+  &currentStateSSD,
+  &flightIDSaverSSD,
+};
 
 CommandLine cmdLine(&Serial);
 HardwareSerial SUART1(PB7, PB6);
+
+// Stream 
+Telemetry telemetry(ssds, SUART1);
 
 #include "commands.h"
 
@@ -171,7 +214,10 @@ void setup() {
   superLoopRate.restrictSaveSpeed(1000);
   altitudeData.restrictSaveSpeed(10); // Save altitude every 10 ms (100hz)
   flightIDSaver.restrictSaveSpeed(10000);
+  apogeeEstData.restrictSaveSpeed(10);
+  currentState.restrictSaveSpeed(2000);
   voltageData.restrictSaveSpeed(100);
+
 
   // Loop start time
   start_time_s = millis() / 1000;
@@ -285,6 +331,12 @@ void loop() {
     led_toggle_delay = 100; // Fast blink in post-launch mode and needs clear_plm before relaunch
   }
 
+  // If post-launch, then start saving estimated apogee data
+  if (stateMachine.getState() >= STATE_ASCENT) {
+    apogeePredictor.poly_update();
+    apogeeEstData.addData(DataPoint(current_time, apogeePredictor.getPredictedApogeeAltitude_m()));
+  }
+  
   xGyroData.addData(DataPoint(current_time, gyro.gyro.x));
   yGyroData.addData(DataPoint(current_time, gyro.gyro.y));
   zGyroData.addData(DataPoint(current_time, gyro.gyro.z));
@@ -294,6 +346,10 @@ void loop() {
   voltageData.addData(DataPoint(current_time, voltage));
 
   superLoopRate.addData(DataPoint(current_time, loop_count / (millis() / 1000 - start_time_s)));
+  currentState.addData(DataPoint(current_time, stateMachine.getState()));
+
+
+  telemetry.tick(current_time);
 
   // Throttle to 100 Hz
   int loop_time_ms = millis() - current_time;  // current_time was captured at the start of the loop
