@@ -75,7 +75,7 @@ float flightID;
 NoiseVariances noiseVariances {0.25f, 1.0f}; // Example variances
 
 VerticalVelocityEstimator verticalVelocityEstimator(noiseVariances);
-SensorDataHandler vertVelocSaver(EST_VERTICAL_VELOCITY, &dataSaver);
+SensorDataHandler estVerticalVelocity(EST_VERTICAL_VELOCITY, &dataSaver);
 
 LaunchDetector launchDetector(40, 500, 25);
 FastLaunchDetector fastLaunchDetector(30, 500);
@@ -101,7 +101,7 @@ SendableSensorData superLoopRateSSD(&superLoopRate, 1);
 SendableSensorData stateChangeSSD(&stateChange, 1);
 SendableSensorData currentStateSSD(&currentState, 1);
 SendableSensorData flightIDSaverSSD(&flightIDSaver, 1);
-SendableSensorData estVerticalVelocitySSD(&vertVelocSaver, 1);
+SendableSensorData estVerticalVelocitySSD(&estVerticalVelocity, 1);
 
 const std::array <SendableSensorData*, 12> ssds = {
   &aclDataSSD,
@@ -320,7 +320,7 @@ void loop() {
     altDataPoint
   );
 
-  vertVelocSaver.addData(DataPoint(current_time, verticalVelocityEstimator.getEstimatedVelocity()));
+  estVerticalVelocity.addData(DataPoint(current_time, verticalVelocityEstimator.getEstimatedVelocity()));
 
   if (stateMachine.getState() >= STATE_ASCENT) {
     led_toggle_delay = 50;
@@ -350,8 +350,6 @@ void loop() {
 
   superLoopRate.addData(DataPoint(current_time, loop_count / (millis() / 1000 - start_time_s)));
   currentState.addData(DataPoint(current_time, stateMachine.getState()));
-
-  // throw here
 
   telemetry.tick(current_time);
 
