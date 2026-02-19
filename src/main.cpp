@@ -75,6 +75,7 @@ float flightID;
 NoiseVariances noiseVariances {0.25f, 1.0f}; // Example variances
 
 VerticalVelocityEstimator verticalVelocityEstimator(noiseVariances);
+SensorDataHandler estVerticalVelocity(EST_VERTICAL_VELOCITY, &dataSaver);
 
 LaunchDetector launchDetector(40, 500, 25);
 FastLaunchDetector fastLaunchDetector(30, 500);
@@ -84,7 +85,6 @@ ApogeePredictor apogeePredictor(verticalVelocityEstimator);
 SensorDataHandler apogeeEstData(EST_APOGEE, &dataSaver);
 
 StateMachine stateMachine(&dataSaver, &launchDetector, &apogeeDetector, &verticalVelocityEstimator, &fastLaunchDetector);
-
 
 const std::array<SensorDataHandler*, 3> acclDataArray = {&xAclData, &yAclData, &zAclData};
 const std::array<SensorDataHandler*, 3> gyroDataArray = {&xGyroData, &yGyroData, &zGyroData};
@@ -101,8 +101,9 @@ SendableSensorData superLoopRateSSD(&superLoopRate, 1);
 SendableSensorData stateChangeSSD(&stateChange, 1);
 SendableSensorData currentStateSSD(&currentState, 1);
 SendableSensorData flightIDSaverSSD(&flightIDSaver, 1);
+SendableSensorData estVerticalVelocitySSD(&estVerticalVelocity, 1);
 
-const std::array <SendableSensorData*, 11> ssds = {
+const std::array <SendableSensorData*, 12> ssds = {
   &aclDataSSD,
   &gyroDataSSD,
   &altitudeDataSSD,
@@ -114,6 +115,7 @@ const std::array <SendableSensorData*, 11> ssds = {
   &stateChangeSSD,
   &currentStateSSD,
   &flightIDSaverSSD,
+  &estVerticalVelocitySSD
 };
 
 CommandLine cmdLine(&Serial);
@@ -318,6 +320,7 @@ void loop() {
     altDataPoint
   );
 
+  estVerticalVelocity.addData(DataPoint(current_time, verticalVelocityEstimator.getEstimatedVelocity()));
 
   if (stateMachine.getState() >= STATE_ASCENT) {
     led_toggle_delay = 50;
@@ -347,7 +350,6 @@ void loop() {
 
   superLoopRate.addData(DataPoint(current_time, loop_count / (millis() / 1000 - start_time_s)));
   currentState.addData(DataPoint(current_time, stateMachine.getState()));
-
 
   telemetry.tick(current_time);
 
