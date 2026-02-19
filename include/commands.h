@@ -30,7 +30,7 @@ void testCommand(std::queue<std::string> arguments, std::string& response) {
 
 
 void ping(std::queue<std::string> arguments, std::string& response) {
-    cmdLine.println("Pinged the microntroller ");
+    cmdLine.println("Hello from MARTHA! :D ");
 }
 
 void clearPostLaunchMode(std::queue<std::string> arguments, std::string& response) {
