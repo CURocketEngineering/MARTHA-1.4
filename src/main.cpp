@@ -119,10 +119,14 @@ const std::array <SendableSensorData*, 12> ssds = {
 };
 
 CommandLine cmdLine(&Serial);
-HardwareSerial SUART1(PB7, PB6);
 
 // Stream 
+#ifdef USB_RADIO  // Redirects Radio output to USB Serial instead of hardware UART, for direct ground station testing without needing the radio
+Telemetry telemetry(ssds, Serial);
+#else
+HardwareSerial SUART1(PB7, PB6);
 Telemetry telemetry(ssds, SUART1);
+#endif
 
 #include "commands.h"
 
@@ -204,7 +208,10 @@ void setup() {
   cmdLine.addCommand("clear_plm", "cplm", clearPostLaunchMode);
   cmdLine.addCommand("status", "s", printStatus);
   cmdLine.addCommand("dump", "d", dumpFlash);
+
+  #ifndef USB_RADIO // Don't start cmd line if using USB radio
   cmdLine.begin();
+  #endif
 
 
   // Set save speeds
@@ -218,7 +225,7 @@ void setup() {
   flightIDSaver.restrictSaveSpeed(10000);
   apogeeEstData.restrictSaveSpeed(10);
   currentState.restrictSaveSpeed(2000);
-  voltageData.restrictSaveSpeed(100);
+  voltageData.restrictSaveSpeed(2000);
 
 
   // Loop start time
@@ -264,7 +271,7 @@ void loop() {
   // serial port
   #ifdef SIM
   SerialSim::getInstance().update();
-  #else 
+  #elifndef USB_RADIO
   cmdLine.readInput();
   #endif
 
