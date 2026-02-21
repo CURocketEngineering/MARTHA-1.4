@@ -136,6 +136,10 @@ void setup() {
 
   pinMode(DEBUG_LED, OUTPUT); // LED 
 
+  #ifndef USB_RADIO
+  SUART1.begin(57600);
+  #endif
+
 
   Serial.begin(115200);
   // while (!Serial) delay(10); // Wait for Serial Monitor (Comment out if not using)
