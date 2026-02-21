@@ -84,7 +84,7 @@ ApogeeDetector apogeeDetector(1.0f);
 ApogeePredictor apogeePredictor(verticalVelocityEstimator);
 SensorDataHandler apogeeEstData(EST_APOGEE, &dataSaver);
 
-SensorDataHandler adcVoltSaver(ADC_VOLTAGE, &dataSaver);
+SensorDataHandler adcVoltSaver(BATTERY_VOLTAGE, &dataSaver);
 
 StateMachine stateMachine(&dataSaver, &launchDetector, &apogeeDetector, &verticalVelocityEstimator, &fastLaunchDetector);
 
