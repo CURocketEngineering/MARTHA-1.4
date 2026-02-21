@@ -84,6 +84,8 @@ ApogeeDetector apogeeDetector(1.0f);
 ApogeePredictor apogeePredictor(verticalVelocityEstimator);
 SensorDataHandler apogeeEstData(EST_APOGEE, &dataSaver);
 
+SensorDataHandler adcVoltSaver(ADC_VOLTAGE, &dataSaver);
+
 StateMachine stateMachine(&dataSaver, &launchDetector, &apogeeDetector, &verticalVelocityEstimator, &fastLaunchDetector);
 
 const std::array<SensorDataHandler*, 3> acclDataArray = {&xAclData, &yAclData, &zAclData};
@@ -98,10 +100,10 @@ SendableSensorData tempDataSSD(&tempData, 1);
 SendableSensorData pressureDataSSD(&pressureData, 1);
 SendableSensorData magDataSSD(magDataArray, 111, 1);
 SendableSensorData superLoopRateSSD(&superLoopRate, 1);
-SendableSensorData stateChangeSSD(&stateChange, 1);
 SendableSensorData currentStateSSD(&currentState, 1);
 SendableSensorData flightIDSaverSSD(&flightIDSaver, 1);
 SendableSensorData estVerticalVelocitySSD(&estVerticalVelocity, 1);
+SendableSensorData adcVoltSSD(&adcVoltSaver, 1);
 
 const std::array <SendableSensorData*, 12> ssds = {
   &aclDataSSD,
@@ -112,10 +114,10 @@ const std::array <SendableSensorData*, 12> ssds = {
   &pressureDataSSD,
   &magDataSSD,
   &superLoopRateSSD,
-  &stateChangeSSD,
   &currentStateSSD,
   &flightIDSaverSSD,
-  &estVerticalVelocitySSD
+  &estVerticalVelocitySSD,
+  &adcVoltSSD
 };
 
 CommandLine cmdLine(&Serial);
