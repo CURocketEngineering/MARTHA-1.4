@@ -23,6 +23,7 @@
 #include "state_estimation/LaunchDetector.h"
 #include "state_estimation/FastLaunchDetector.h"
 #include "state_estimation/ApogeeDetector.h"
+#include "state_estimation/GroundLevelEstimator.h"
 #include "state_estimation/VerticalVelocityEstimator.h"
 #include "state_estimation/ApogeePredictor.h"
 #include "state_estimation/States.h"
@@ -80,6 +81,7 @@ SensorDataHandler estVerticalVelocity(EST_VERTICAL_VELOCITY, &dataSaver);
 LaunchDetector launchDetector(40, 500, 25);
 FastLaunchDetector fastLaunchDetector(30, 500);
 ApogeeDetector apogeeDetector(1.0f);
+GroundLevelEstimator groundLevelEstimator(0.1f);
 
 ApogeePredictor apogeePredictor(verticalVelocityEstimator);
 SensorDataHandler apogeeEstData(EST_APOGEE, &dataSaver);
@@ -137,7 +139,7 @@ void setup() {
   #ifndef USB_RADIO
   SUART1.begin(57600);
   #endif
-
+ 
 
   Serial.begin(115200);
   // while (!Serial) delay(10); // Wait for Serial Monitor (Comment out if not using)
@@ -308,7 +310,12 @@ void loop() {
     #else
       // Simulation data might not store pressure in the same units, while meters is standard for alt
       float alt = 44330.0 * (1.0 - pow(pres / 100.0f / SEALEVELPRESSURE_HPA, 0.1903));
+      // Immediatly convert from ASL to AGL
+      alt = groundLevelEstimator.update(alt);
     #endif
+
+
+
     float temp = bmp.getTemperature();
 
     
@@ -348,6 +355,7 @@ void loop() {
   // If post-launch, then start saving estimated apogee data
   if (stateMachine.getState() >= STATE_ASCENT) {
     apogeePredictor.poly_update();
+    groundLevelEstimator.launchDetected();
     apogeeEstData.addData(DataPoint(current_time, apogeePredictor.getPredictedApogeeAltitude_m()));
   }
   
