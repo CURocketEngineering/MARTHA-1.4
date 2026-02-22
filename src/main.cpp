@@ -84,8 +84,6 @@ ApogeeDetector apogeeDetector(1.0f);
 ApogeePredictor apogeePredictor(verticalVelocityEstimator);
 SensorDataHandler apogeeEstData(EST_APOGEE, &dataSaver);
 
-SensorDataHandler adcVoltSaver(BATTERY_VOLTAGE, &dataSaver);
-
 StateMachine stateMachine(&dataSaver, &launchDetector, &apogeeDetector, &verticalVelocityEstimator, &fastLaunchDetector);
 
 const std::array<SensorDataHandler*, 3> acclDataArray = {&xAclData, &yAclData, &zAclData};
@@ -93,7 +91,7 @@ const std::array<SensorDataHandler*, 3> gyroDataArray = {&xGyroData, &yGyroData,
 const std::array<SensorDataHandler*, 3> magDataArray = {&xMagData, &yMagData, &zMagData};
 
 SendableSensorData aclDataSSD(acclDataArray, 102, 10);
-SendableSensorData gyroDataSSD(gyroDataArray, 105, 2);
+SendableSensorData gyroDataSSD(gyroDataArray, 105, 10);
 SendableSensorData altitudeDataSSD(&altitudeData, 10);
 SendableSensorData apogeeEstDataSSD(&apogeeEstData, 2);
 SendableSensorData tempDataSSD(&tempData, 1);
@@ -103,7 +101,7 @@ SendableSensorData superLoopRateSSD(&superLoopRate, 1);
 SendableSensorData currentStateSSD(&currentState, 1);
 SendableSensorData flightIDSaverSSD(&flightIDSaver, 1);
 SendableSensorData estVerticalVelocitySSD(&estVerticalVelocity, 1);
-SendableSensorData adcVoltSSD(&adcVoltSaver, 1);
+SendableSensorData voltageDataSSD(&voltageData, 1);
 
 const std::array <SendableSensorData*, 12> ssds = {
   &aclDataSSD,
@@ -117,7 +115,7 @@ const std::array <SendableSensorData*, 12> ssds = {
   &currentStateSSD,
   &flightIDSaverSSD,
   &estVerticalVelocitySSD,
-  &adcVoltSSD
+  &voltageDataSSD
 };
 
 CommandLine cmdLine(&Serial);
