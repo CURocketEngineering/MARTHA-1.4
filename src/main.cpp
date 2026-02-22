@@ -310,11 +310,10 @@ void loop() {
     #else
       // Simulation data might not store pressure in the same units, while meters is standard for alt
       float alt = 44330.0 * (1.0 - pow(pres / 100.0f / SEALEVELPRESSURE_HPA, 0.1903));
-      // Immediatly convert from ASL to AGL
-      alt = groundLevelEstimator.update(alt);
     #endif
 
-
+    // Immediatly convert from ASL to AGL
+    alt = groundLevelEstimator.update(alt);
 
     float temp = bmp.getTemperature();
 
