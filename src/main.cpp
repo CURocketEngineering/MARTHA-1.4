@@ -354,7 +354,7 @@ void loop() {
 
   // If post-launch, then start saving estimated apogee data
   if (stateMachine.getState() >= STATE_ASCENT) {
-    apogeePredictor.poly_update();
+    apogeePredictor.analytic_update();
     groundLevelEstimator.launchDetected();
     apogeeEstData.addData(DataPoint(current_time, apogeePredictor.getPredictedApogeeAltitude_m()));
   }
