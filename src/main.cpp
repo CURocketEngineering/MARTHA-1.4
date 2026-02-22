@@ -92,9 +92,9 @@ const std::array<SensorDataHandler*, 3> acclDataArray = {&xAclData, &yAclData, &
 const std::array<SensorDataHandler*, 3> gyroDataArray = {&xGyroData, &yGyroData, &zGyroData};
 const std::array<SensorDataHandler*, 3> magDataArray = {&xMagData, &yMagData, &zMagData};
 
-SendableSensorData aclDataSSD(acclDataArray, 102, 10);
-SendableSensorData gyroDataSSD(gyroDataArray, 105, 10);
-SendableSensorData altitudeDataSSD(&altitudeData, 10);
+SendableSensorData aclDataSSD(acclDataArray, 102, 5);
+SendableSensorData gyroDataSSD(gyroDataArray, 105, 5);
+SendableSensorData altitudeDataSSD(&altitudeData, 5);
 SendableSensorData apogeeEstDataSSD(&apogeeEstData, 2);
 SendableSensorData tempDataSSD(&tempData, 1);
 SendableSensorData pressureDataSSD(&pressureData, 1);
