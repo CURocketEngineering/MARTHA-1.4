@@ -27,6 +27,7 @@
 #include "state_estimation/ApogeePredictor.h"
 #include "state_estimation/States.h"
 #include "state_estimation/StateMachine.h" 
+#include "state_estimation/OrientationEstimator.h"
 #include "PowerManagement.h"
 
 #define SEALEVELPRESSURE_HPA (1013.25)
@@ -71,6 +72,12 @@ SensorDataHandler stateChange(STATE_CHANGE, &dataSaver);
 SensorDataHandler currentState(CURRENT_STATE, &dataSaver);
 SensorDataHandler flightIDSaver(FLIGHT_ID, &dataSaver);
 float flightID;
+
+//Orientation Estimation
+SensorDataHandler rollData(ROLL, &dataSaver);
+SensorDataHandler pitchData(PITCH, &dataSaver);
+SensorDataHandler yawData(YAW, &dataSaver);
+OrientationEstimator orientationEstimator(104.0f); // Initialize with the same frequency as the sensors
 
 NoiseVariances noiseVariances {0.25f, 1.0f}; // Example variances
 
@@ -232,6 +239,9 @@ void setup() {
   apogeeEstData.restrictSaveSpeed(10);
   currentState.restrictSaveSpeed(2000);
   voltageData.restrictSaveSpeed(2000);
+  rollData.restrictSaveSpeed(10);
+  pitchData.restrictSaveSpeed(10);
+  yawData.restrictSaveSpeed(10);
 
 
   // Loop start time
@@ -295,11 +305,15 @@ void loop() {
 
   mag.getEvent(&mag_event);
 
-  xMagData.addData(DataPoint(current_time, mag_event.magnetic.x));
-  yMagData.addData(DataPoint(current_time, mag_event.magnetic.y));
-  zMagData.addData(DataPoint(current_time, mag_event.magnetic.z));
+  DataPoint xMagDataPoint(current_time, mag_event.magnetic.x);
+  DataPoint yMagDataPoint(current_time, mag_event.magnetic.y);
+  DataPoint zMagDataPoint(current_time, mag_event.magnetic.z);
+  
+  xMagData.addData(xMagDataPoint);
+  yMagData.addData(yMagDataPoint);
+  zMagData.addData(zMagDataPoint);
 
-
+  MagTriplet magTriplet = {xMagDataPoint, yMagDataPoint, zMagDataPoint};
 
   // Check periodically if a new reading is available
   if (bmp.updateConversion()) {
@@ -353,13 +367,30 @@ void loop() {
     apogeeEstData.addData(DataPoint(current_time, apogeePredictor.getPredictedApogeeAltitude_m()));
   }
   
-  xGyroData.addData(DataPoint(current_time, gyro.gyro.x));
-  yGyroData.addData(DataPoint(current_time, gyro.gyro.y));
-  zGyroData.addData(DataPoint(current_time, gyro.gyro.z));
+  DataPoint xgyroDataPoint(current_time, gyro.gyro.x);
+  DataPoint ygyroDataPoint(current_time, gyro.gyro.y);
+  DataPoint zgyroDataPoint(current_time, gyro.gyro.z);
+  
+  xGyroData.addData(xgyroDataPoint);
+  yGyroData.addData(ygyroDataPoint);
+  zGyroData.addData(zgyroDataPoint);
+
+  GyroTriplet gyroTriplet = {xgyroDataPoint, ygyroDataPoint, zgyroDataPoint};
 
   // Read and save battery voltage
   float voltage = adcVolt.readVoltage();
   voltageData.addData(DataPoint(current_time, voltage));
+
+  // Update orientation estimator and save roll, pitch, yaw
+  static uint32_t lastUpdateTime = 0;
+  float dt_s = (lastUpdateTime == 0) ? 0.0096f : (current_time - lastUpdateTime) / 1000.0f;
+  lastUpdateTime = current_time;
+
+  orientationEstimator.update(aclTriplet, gyroTriplet, magTriplet, dt_s);
+  orientationEstimator.getEuler();
+  rollData.addData(DataPoint(current_time, orientationEstimator.getRoll()));
+  pitchData.addData(DataPoint(current_time, orientationEstimator.getPitch()));
+  yawData.addData(DataPoint(current_time, orientationEstimator.getYaw()));
 
   superLoopRate.addData(DataPoint(current_time, loop_count / (millis() / 1000 - start_time_s)));
   currentState.addData(DataPoint(current_time, stateMachine.getState()));
