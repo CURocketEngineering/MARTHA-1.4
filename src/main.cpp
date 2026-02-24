@@ -23,6 +23,7 @@
 #include "state_estimation/LaunchDetector.h"
 #include "state_estimation/FastLaunchDetector.h"
 #include "state_estimation/ApogeeDetector.h"
+#include "state_estimation/GroundLevelEstimator.h"
 #include "state_estimation/VerticalVelocityEstimator.h"
 #include "state_estimation/ApogeePredictor.h"
 #include "state_estimation/States.h"
@@ -87,11 +88,10 @@ SensorDataHandler estVerticalVelocity(EST_VERTICAL_VELOCITY, &dataSaver);
 LaunchDetector launchDetector(40, 500, 25);
 FastLaunchDetector fastLaunchDetector(30, 500);
 ApogeeDetector apogeeDetector(1.0f);
+GroundLevelEstimator groundLevelEstimator(0.1f);
 
 ApogeePredictor apogeePredictor(verticalVelocityEstimator);
 SensorDataHandler apogeeEstData(EST_APOGEE, &dataSaver);
-
-SensorDataHandler adcVoltSaver(BATTERY_VOLTAGE, &dataSaver);
 
 StateMachine stateMachine(&dataSaver, &launchDetector, &apogeeDetector, &verticalVelocityEstimator, &fastLaunchDetector);
 
@@ -99,9 +99,9 @@ const std::array<SensorDataHandler*, 3> acclDataArray = {&xAclData, &yAclData, &
 const std::array<SensorDataHandler*, 3> gyroDataArray = {&xGyroData, &yGyroData, &zGyroData};
 const std::array<SensorDataHandler*, 3> magDataArray = {&xMagData, &yMagData, &zMagData};
 
-SendableSensorData aclDataSSD(acclDataArray, 102, 10);
-SendableSensorData gyroDataSSD(gyroDataArray, 105, 2);
-SendableSensorData altitudeDataSSD(&altitudeData, 10);
+SendableSensorData aclDataSSD(acclDataArray, 102, 5);
+SendableSensorData gyroDataSSD(gyroDataArray, 105, 5);
+SendableSensorData altitudeDataSSD(&altitudeData, 5);
 SendableSensorData apogeeEstDataSSD(&apogeeEstData, 2);
 SendableSensorData tempDataSSD(&tempData, 1);
 SendableSensorData pressureDataSSD(&pressureData, 1);
@@ -110,7 +110,7 @@ SendableSensorData superLoopRateSSD(&superLoopRate, 1);
 SendableSensorData currentStateSSD(&currentState, 1);
 SendableSensorData flightIDSaverSSD(&flightIDSaver, 1);
 SendableSensorData estVerticalVelocitySSD(&estVerticalVelocity, 1);
-SendableSensorData adcVoltSSD(&adcVoltSaver, 1);
+SendableSensorData voltageDataSSD(&voltageData, 1);
 
 const std::array <SendableSensorData*, 12> ssds = {
   &aclDataSSD,
@@ -124,7 +124,7 @@ const std::array <SendableSensorData*, 12> ssds = {
   &currentStateSSD,
   &flightIDSaverSSD,
   &estVerticalVelocitySSD,
-  &adcVoltSSD
+  &voltageDataSSD
 };
 
 CommandLine cmdLine(&Serial);
@@ -146,7 +146,7 @@ void setup() {
   #ifndef USB_RADIO
   SUART1.begin(57600);
   #endif
-
+ 
 
   Serial.begin(115200);
   // while (!Serial) delay(10); // Wait for Serial Monitor (Comment out if not using)
@@ -325,6 +325,10 @@ void loop() {
       // Simulation data might not store pressure in the same units, while meters is standard for alt
       float alt = 44330.0 * (1.0 - pow(pres / 100.0f / SEALEVELPRESSURE_HPA, 0.1903));
     #endif
+
+    // Immediatly convert from ASL to AGL
+    alt = groundLevelEstimator.update(alt);
+
     float temp = bmp.getTemperature();
 
     
@@ -364,6 +368,7 @@ void loop() {
   // If post-launch, then start saving estimated apogee data
   if (stateMachine.getState() >= STATE_ASCENT) {
     apogeePredictor.analytic_update();
+    groundLevelEstimator.launchDetected();
     apogeeEstData.addData(DataPoint(current_time, apogeePredictor.getPredictedApogeeAltitude_m()));
   }
   
