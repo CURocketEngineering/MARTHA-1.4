@@ -387,11 +387,7 @@ void loop() {
   voltageData.addData(DataPoint(current_time, voltage));
 
   // Update orientation estimator and save roll, pitch, yaw
-  static uint32_t lastUpdateTime = 0;
-  float dt_s = (lastUpdateTime == 0) ? 0.0096f : (current_time - lastUpdateTime) / 1000.0f;
-  lastUpdateTime = current_time;
-
-  orientationEstimator.update(aclTriplet, gyroTriplet, magTriplet, dt_s);
+  orientationEstimator.update(aclTriplet, gyroTriplet, magTriplet, current_time);
   orientationEstimator.getEuler();
   rollData.addData(DataPoint(current_time, orientationEstimator.getRoll()));
   pitchData.addData(DataPoint(current_time, orientationEstimator.getPitch()));
