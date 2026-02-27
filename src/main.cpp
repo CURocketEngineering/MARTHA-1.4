@@ -98,6 +98,7 @@ StateMachine stateMachine(&dataSaver, &launchDetector, &apogeeDetector, &vertica
 const std::array<SensorDataHandler*, 3> acclDataArray = {&xAclData, &yAclData, &zAclData};
 const std::array<SensorDataHandler*, 3> gyroDataArray = {&xGyroData, &yGyroData, &zGyroData};
 const std::array<SensorDataHandler*, 3> magDataArray = {&xMagData, &yMagData, &zMagData};
+const std::array<SensorDataHandler*, 3> orientationDataArray = {&rollData, &pitchData, &yawData};
 
 SendableSensorData aclDataSSD(acclDataArray, 102, 5);
 SendableSensorData gyroDataSSD(gyroDataArray, 105, 5);
@@ -111,8 +112,9 @@ SendableSensorData currentStateSSD(&currentState, 1);
 SendableSensorData flightIDSaverSSD(&flightIDSaver, 1);
 SendableSensorData estVerticalVelocitySSD(&estVerticalVelocity, 1);
 SendableSensorData voltageDataSSD(&voltageData, 1);
+SendableSensorData orientationDataSSD(orientationDataArray, 120, 5);
 
-const std::array <SendableSensorData*, 12> ssds = {
+const std::array <SendableSensorData*, 13> ssds = {
   &aclDataSSD,
   &gyroDataSSD,
   &altitudeDataSSD,
@@ -124,7 +126,8 @@ const std::array <SendableSensorData*, 12> ssds = {
   &currentStateSSD,
   &flightIDSaverSSD,
   &estVerticalVelocitySSD,
-  &voltageDataSSD
+  &voltageDataSSD,
+  &orientationDataSSD
 };
 
 CommandLine cmdLine(&Serial);
@@ -239,9 +242,9 @@ void setup() {
   apogeeEstData.restrictSaveSpeed(10);
   currentState.restrictSaveSpeed(2000);
   voltageData.restrictSaveSpeed(2000);
-  rollData.restrictSaveSpeed(10);
-  pitchData.restrictSaveSpeed(10);
-  yawData.restrictSaveSpeed(10);
+  rollData.restrictSaveSpeed(100);
+  pitchData.restrictSaveSpeed(100);
+  yawData.restrictSaveSpeed(100);
 
 
   // Loop start time
