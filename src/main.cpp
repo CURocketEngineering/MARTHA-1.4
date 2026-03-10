@@ -192,13 +192,13 @@ void setup() {
   }
 
   // Set up oversampling and filter initialization
-  bmp.setTemperatureOversampling(BMP3_OVERSAMPLING_8X);
-  bmp.setPressureOversampling(BMP3_OVERSAMPLING_4X);
+  bmp.setTemperatureOversampling(BMP3_NO_OVERSAMPLING);
+  bmp.setPressureOversampling(BMP3_OVERSAMPLING_2X);
   bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_3);
   bmp.setOutputDataRate(BMP3_ODR_100_HZ);
 
-  bmp.setConversionDelay(10); // 10 ms == 100 Hz
-  bmp.startConversion(); // Start the first conversion
+  bmp.setConversionDelay(8); // Give the BMP 8ms to get the next set of data ready.
+  bmp.startConversion(); // Start the first conversion (won't be able to collect for 8ms, so get it on the next loop)
 
   Serial.println("Setting up data saver...");
 
