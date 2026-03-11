@@ -125,9 +125,11 @@ CommandLine cmdLine(&Serial);
 // Stream 
 #ifdef USB_RADIO  // Redirects Radio output to USB Serial instead of hardware UART, for direct ground station testing without needing the radio
 Telemetry telemetry(ssds, Serial);
+bool wasInTelemetryCommandMode = false;
 #else
 HardwareSerial SUART1(PB7, PB6);
 Telemetry telemetry(ssds, SUART1);
+bool wasInTelemetryCommandMode = false;
 #endif
 
 #include "commands.h"
@@ -277,8 +279,41 @@ void loop() {
   // serial port
   #ifdef SIM
   SerialSim::getInstance().update();
-  #elifndef USB_RADIO
+  #else
+  const bool inTelemetryCommandMode = telemetry.isInCommandMode();
+
+  #ifdef USB_RADIO
+  if (inTelemetryCommandMode && !wasInTelemetryCommandMode) {
+    cmdLine.print(SHELL_PROMPT);
+  }
+
+  if (inTelemetryCommandMode) {
+    if (Serial.available() > 0) {
+      telemetry.noteCommandInput(current_time);
+    }
+    cmdLine.readInput();
+  }
+  #else
+  // Switching the commandline between the radio UART or the USB Serial
+  if (inTelemetryCommandMode && !wasInTelemetryCommandMode) {
+    cmdLine.setUART(&SUART1);
+    cmdLine.print(SHELL_PROMPT);
+  } else if (!inTelemetryCommandMode && wasInTelemetryCommandMode) {
+    cmdLine.setUART(&Serial);
+  }
+
+  // Keeps the telemetry command mode alive
+  // If no input is received pass a timeout, then it will exit command mode to resume telemetry
+  if (inTelemetryCommandMode) {
+    if (SUART1.available() > 0) {
+      telemetry.noteCommandInput(current_time);
+    }
+  }
+
   cmdLine.readInput();
+  #endif
+
+  wasInTelemetryCommandMode = inTelemetryCommandMode;
   #endif
 
   sox.getEvent(&accel, &gyro, &temp);
@@ -369,6 +404,8 @@ void loop() {
   superLoopRate.addData(DataPoint(current_time, loop_count / (millis() / 1000 - start_time_s)));
   currentState.addData(DataPoint(current_time, stateMachine.getState()));
 
+
+  // Won't consume bytes if in command mode
   telemetry.tick(current_time);
 
   // Throttle to 100 Hz
