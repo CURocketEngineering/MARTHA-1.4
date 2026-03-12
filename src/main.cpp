@@ -124,12 +124,10 @@ CommandLine cmdLine(&Serial);
 
 // Stream 
 #ifdef USB_RADIO  // Redirects Radio output to USB Serial instead of hardware UART, for direct ground station testing without needing the radio
-Telemetry telemetry(ssds, Serial);
-bool wasInTelemetryCommandMode = false;
+Telemetry telemetry(ssds, Serial, &cmdLine);
 #else
 HardwareSerial SUART1(PB7, PB6);
-Telemetry telemetry(ssds, SUART1);
-bool wasInTelemetryCommandMode = false;
+Telemetry telemetry(ssds, SUART1, &cmdLine);
 #endif
 
 #include "commands.h"
@@ -217,7 +215,7 @@ void setup() {
   cmdLine.addCommand("status", "s", printStatus);
   cmdLine.addCommand("dump", "d", dumpFlash);
 
-  #ifndef USB_RADIO // Don't start cmd line if using USB radio
+  #if !defined(USB_RADIO) && !defined(SIM) // Don't start cmd line if using USB radio or SIM serial input
   cmdLine.begin();
   #endif
 
@@ -251,6 +249,7 @@ void setup() {
   while (!Serial) delay(10);
   SerialSim::getInstance().begin(&Serial, &stateMachine); 
   dataSaver.clearPostLaunchMode(); // Clear plm for sim
+  telemetry.setCommandLine(nullptr); // SIM uses serial input for sensor simulation.
   #endif
 
 }
@@ -280,40 +279,7 @@ void loop() {
   #ifdef SIM
   SerialSim::getInstance().update();
   #else
-  const bool inTelemetryCommandMode = telemetry.isInCommandMode();
-
-  #ifdef USB_RADIO
-  if (inTelemetryCommandMode && !wasInTelemetryCommandMode) {
-    cmdLine.print(SHELL_PROMPT);
-  }
-
-  if (inTelemetryCommandMode) {
-    if (Serial.available() > 0) {
-      telemetry.noteCommandInput(current_time);
-    }
-    cmdLine.readInput();
-  }
-  #else
-  // Switching the commandline between the radio UART or the USB Serial
-  if (inTelemetryCommandMode && !wasInTelemetryCommandMode) {
-    cmdLine.setUART(&SUART1);
-    cmdLine.print(SHELL_PROMPT);
-  } else if (!inTelemetryCommandMode && wasInTelemetryCommandMode) {
-    cmdLine.setUART(&Serial);
-  }
-
-  // Keeps the telemetry command mode alive
-  // If no input is received pass a timeout, then it will exit command mode to resume telemetry
-  if (inTelemetryCommandMode) {
-    if (SUART1.available() > 0) {
-      telemetry.noteCommandInput(current_time);
-    }
-  }
-
   cmdLine.readInput();
-  #endif
-
-  wasInTelemetryCommandMode = inTelemetryCommandMode;
   #endif
 
   sox.getEvent(&accel, &gyro, &temp);
