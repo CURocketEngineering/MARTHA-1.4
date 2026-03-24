@@ -124,10 +124,10 @@ CommandLine cmdLine(&Serial);
 
 // Stream 
 #ifdef USB_RADIO  // Redirects Radio output to USB Serial instead of hardware UART, for direct ground station testing without needing the radio
-Telemetry telemetry(ssds, Serial);
+Telemetry telemetry(ssds, Serial, &cmdLine);
 #else
 HardwareSerial SUART1(PB7, PB6);
-Telemetry telemetry(ssds, SUART1);
+Telemetry telemetry(ssds, SUART1, &cmdLine);
 #endif
 
 #include "commands.h"
@@ -212,10 +212,11 @@ void setup() {
   cmdLine.addCommand("test", "t", testCommand);  
   cmdLine.addCommand("ping", "p", ping);    
   cmdLine.addCommand("clear_plm", "cplm", clearPostLaunchMode);
+  cmdLine.addCommand("exit", "x", exitCommandMode);
   cmdLine.addCommand("status", "s", printStatus);
   cmdLine.addCommand("dump", "d", dumpFlash);
 
-  #ifndef USB_RADIO // Don't start cmd line if using USB radio
+  #if !defined(USB_RADIO) && !defined(SIM) // Don't start cmd line if using USB radio or SIM serial input
   cmdLine.begin();
   #endif
 
@@ -249,6 +250,7 @@ void setup() {
   while (!Serial) delay(10);
   SerialSim::getInstance().begin(&Serial, &stateMachine); 
   dataSaver.clearPostLaunchMode(); // Clear plm for sim
+  telemetry.setCommandLine(nullptr); // SIM uses serial input for sensor simulation.
   #endif
 
 }
@@ -273,11 +275,16 @@ void loop() {
   sensors_event_t temp;
   sensors_event_t mag_event; 
 
-  // Cannot use cmdLine in SIM mode b/c they use the same
-  // serial port
-  #ifdef SIM
+  // Cannot use cmdLine in SIM mode b/c they use the same serial port.
+  // In USB_RADIO mode, only consume command-line bytes once telemetry has
+  // switched into command mode on the radio stream.
+  #if defined(SIM)
   SerialSim::getInstance().update();
-  #elifndef USB_RADIO
+  #elif defined(USB_RADIO)
+  if (telemetry.isInCommandMode()) {
+    cmdLine.readInput();
+  }
+  #else
   cmdLine.readInput();
   #endif
 
@@ -369,6 +376,8 @@ void loop() {
   superLoopRate.addData(DataPoint(current_time, loop_count / (millis() / 1000 - start_time_s)));
   currentState.addData(DataPoint(current_time, stateMachine.getState()));
 
+
+  // Won't consume bytes if in command mode
   telemetry.tick(current_time);
 
   // Throttle to 100 Hz
