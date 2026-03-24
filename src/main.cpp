@@ -78,7 +78,7 @@ float flightID;
 SensorDataHandler rollData(ROLL, &dataSaver);
 SensorDataHandler pitchData(PITCH, &dataSaver);
 SensorDataHandler yawData(YAW, &dataSaver);
-OrientationEstimator orientationEstimator(104.0f); // Initialize with the same frequency as the sensors
+OrientationEstimator orientationEstimator;
 
 NoiseVariances noiseVariances {0.25f, 1.0f}; // Example variances
 
@@ -391,7 +391,6 @@ void loop() {
 
   // Update orientation estimator and save roll, pitch, yaw
   orientationEstimator.update(aclTriplet, gyroTriplet, magTriplet, current_time);
-  orientationEstimator.getEuler();
   rollData.addData(DataPoint(current_time, orientationEstimator.getRoll()));
   pitchData.addData(DataPoint(current_time, orientationEstimator.getPitch()));
   yawData.addData(DataPoint(current_time, orientationEstimator.getYaw()));
