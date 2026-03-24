@@ -47,13 +47,26 @@ std::string floatToString(float value, int precision = 2) {
 }
 
 void dumpFlash(std::queue<std::string> arguments, std::string& response) {
+    constexpr std::uint32_t kDumpTimeoutLockMs = 180000; // 3 minutes
+    Stream* activeUART = cmdLine.getActiveUART();
+    if (activeUART == nullptr) {
+        cmdLine.println("No active UART available for dump.");
+        return;
+    }
+
+    auto runDump = [&](bool ignoreEmptyPages) {
+        telemetry.lockCommandModeTimeout(kDumpTimeoutLockMs);
+        dataSaver.dumpData(*activeUART, ignoreEmptyPages);
+        telemetry.unlockCommandModeTimeout();
+    };
+
     // check for -a in arg
     if (arguments.empty()) {
-        dataSaver.dumpData(Serial, false);
+        runDump(false);
         return;
     } else if (arguments.front() == "-a") {
         arguments.pop();
-        dataSaver.dumpData(Serial, true);
+        runDump(true);
         return;
     } else {
       cmdLine.println("Invalid argument. Use -a to ignore empty pages.");
@@ -141,4 +154,3 @@ void printStatus(std::queue<std::string> arguments, std::string& response) {
     cmdLine.print("Battery Voltage: ");
     cmdLine.println(floatToString(adcVolt.readVoltage()));
 }
-
