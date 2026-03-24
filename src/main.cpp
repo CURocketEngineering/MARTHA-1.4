@@ -274,10 +274,15 @@ void loop() {
   sensors_event_t temp;
   sensors_event_t mag_event; 
 
-  // Cannot use cmdLine in SIM mode b/c they use the same
-  // serial port
-  #ifdef SIM
+  // Cannot use cmdLine in SIM mode b/c they use the same serial port.
+  // In USB_RADIO mode, only consume command-line bytes once telemetry has
+  // switched into command mode on the radio stream.
+  #if defined(SIM)
   SerialSim::getInstance().update();
+  #elif defined(USB_RADIO)
+  if (telemetry.isInCommandMode()) {
+    cmdLine.readInput();
+  }
   #else
   cmdLine.readInput();
   #endif
