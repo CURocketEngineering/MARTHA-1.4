@@ -212,6 +212,7 @@ void setup() {
   cmdLine.addCommand("test", "t", testCommand);  
   cmdLine.addCommand("ping", "p", ping);    
   cmdLine.addCommand("clear_plm", "cplm", clearPostLaunchMode);
+  cmdLine.addCommand("exit", "x", exitCommandMode);
   cmdLine.addCommand("status", "s", printStatus);
   cmdLine.addCommand("dump", "d", dumpFlash);
 

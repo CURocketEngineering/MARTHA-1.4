@@ -40,6 +40,15 @@ void clearPostLaunchMode(std::queue<std::string> arguments, std::string& respons
     cmdLine.println("Cleared post launch mode, reboot the device to complete the reset.");
 }
 
+void exitCommandMode(std::queue<std::string> arguments, std::string& response) {
+    if (telemetry.isInCommandMode()) {
+        telemetry.forceExitCommandMode();
+        return;
+    }
+
+    cmdLine.println("Not in command mode.");
+}
+
 std::string floatToString(float value, int precision = 2) {
     char buffer[20];
     dtostrf(value, 0, precision, buffer);
