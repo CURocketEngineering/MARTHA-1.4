@@ -390,6 +390,9 @@ void loop() {
   voltageData.addData(DataPoint(current_time, voltage));
 
   // Update orientation estimator and save roll, pitch, yaw
+  if (stateMachine.getState() >= STATE_ASCENT) {
+    orientationEstimator.launchDetected();
+  }
   orientationEstimator.update(aclTriplet, gyroTriplet, magTriplet, current_time);
   rollData.addData(DataPoint(current_time, orientationEstimator.getRoll()));
   pitchData.addData(DataPoint(current_time, orientationEstimator.getPitch()));
