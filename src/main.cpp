@@ -78,7 +78,7 @@ float flightID;
 SensorDataHandler rollData(ROLL, &dataSaver);
 SensorDataHandler pitchData(PITCH, &dataSaver);
 SensorDataHandler yawData(YAW, &dataSaver);
-OrientationEstimator orientationEstimator;
+OrientationEstimator orientationEstimator(0.08f);
 
 NoiseVariances noiseVariances {0.25f, 1.0f}; // Example variances
 
@@ -112,7 +112,7 @@ SendableSensorData currentStateSSD(&currentState, 1);
 SendableSensorData flightIDSaverSSD(&flightIDSaver, 1);
 SendableSensorData estVerticalVelocitySSD(&estVerticalVelocity, 1);
 SendableSensorData voltageDataSSD(&voltageData, 1);
-SendableSensorData orientationDataSSD(orientationDataArray, 120, 5);
+SendableSensorData orientationDataSSD(orientationDataArray, 120, 10);
 
 const std::array <SendableSensorData*, 13> ssds = {
   &aclDataSSD,
