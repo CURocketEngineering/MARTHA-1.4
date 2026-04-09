@@ -122,6 +122,8 @@ const std::array <SendableSensorData*, 12> ssds = {
 
 CommandLine cmdLine(&Serial);
 
+float longestLoopTime_ms = 0;
+
 // Stream 
 #ifdef USB_RADIO  // Redirects Radio output to USB Serial instead of hardware UART, for direct ground station testing without needing the radio
 Telemetry telemetry(ssds, Serial, &cmdLine);
@@ -197,7 +199,7 @@ void setup() {
   bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_3);
   bmp.setOutputDataRate(BMP3_ODR_100_HZ);
 
-  bmp.setConversionDelay(8); // Give the BMP 8ms to get the next set of data ready.
+  bmp.setConversionDelay(7); // Give the BMP 8ms to get the next set of data ready.
   bmp.startConversion(); // Start the first conversion (won't be able to collect for 8ms, so get it on the next loop)
 
   Serial.println("Setting up data saver...");
@@ -382,6 +384,25 @@ void loop() {
 
   // Throttle to 100 Hz
   int loop_time_ms = millis() - current_time;  // current_time was captured at the start of the loop
+  // Wait 1000 loops before tracking longest loop time, to allow for any initial setup or variability to stabilize
+  if (loop_time_ms > longestLoopTime_ms && loop_count > 1000) {
+    longestLoopTime_ms = loop_time_ms;
+    Serial.print("New longest loop time: ");
+    Serial.print(longestLoopTime_ms);
+    Serial.print(" ms  ");
+    // how long it's been runing for
+    Serial.print("Time since start: ");
+    Serial.print(millis());
+    Serial.println(" ms");
+  }
+  if (loop_time_ms > 10){
+    Serial.print("Warning: Loop time of ");
+    Serial.print(loop_time_ms);
+    Serial.print(" ms exceeds 10 ms target");
+    Serial.print("  Time since start: ");
+    Serial.print(millis());
+    Serial.println(" ms");
+  }
   if (loop_time_ms < 10) {
     delay(10 - loop_time_ms);
   }
