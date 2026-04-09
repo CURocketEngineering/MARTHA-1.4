@@ -214,6 +214,7 @@ void setup() {
   cmdLine.addCommand("test", "t", testCommand);  
   cmdLine.addCommand("ping", "p", ping);    
   cmdLine.addCommand("clear_plm", "cplm", clearPostLaunchMode);
+  cmdLine.addCommand("restart", "r", restart);
   cmdLine.addCommand("exit", "x", exitCommandMode);
   cmdLine.addCommand("status", "s", printStatus);
   cmdLine.addCommand("dump", "d", dumpFlash);
@@ -384,24 +385,10 @@ void loop() {
 
   // Throttle to 100 Hz
   int loop_time_ms = millis() - current_time;  // current_time was captured at the start of the loop
+  
   // Wait 1000 loops before tracking longest loop time, to allow for any initial setup or variability to stabilize
   if (loop_time_ms > longestLoopTime_ms && loop_count > 1000) {
     longestLoopTime_ms = loop_time_ms;
-    Serial.print("New longest loop time: ");
-    Serial.print(longestLoopTime_ms);
-    Serial.print(" ms  ");
-    // how long it's been runing for
-    Serial.print("Time since start: ");
-    Serial.print(millis());
-    Serial.println(" ms");
-  }
-  if (loop_time_ms > 10){
-    Serial.print("Warning: Loop time of ");
-    Serial.print(loop_time_ms);
-    Serial.print(" ms exceeds 10 ms target");
-    Serial.print("  Time since start: ");
-    Serial.print(millis());
-    Serial.println(" ms");
   }
   if (loop_time_ms < 10) {
     delay(10 - loop_time_ms);

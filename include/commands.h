@@ -40,6 +40,14 @@ void clearPostLaunchMode(std::queue<std::string> arguments, std::string& respons
     cmdLine.println("Cleared post launch mode");
 }
 
+void restart(std::queue<std::string> arguments, std::string& response) {
+    (void)arguments;
+
+    cmdLine.println("Rebooting MCU...");
+    delay(20);
+    NVIC_SystemReset();
+}
+
 void exitCommandMode(std::queue<std::string> arguments, std::string& response) {
     if (telemetry.isInCommandMode()) {
         telemetry.forceExitCommandMode();
