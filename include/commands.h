@@ -37,7 +37,15 @@ void clearPostLaunchMode(std::queue<std::string> arguments, std::string& respons
     dataSaver.clearPostLaunchMode();
     dataSaver.clearInternalState();
     launchDetector.reset(); // fibo
-    cmdLine.println("Cleared post launch mode, reboot the device to complete the reset.");
+    cmdLine.println("Cleared post launch mode");
+}
+
+void restart(std::queue<std::string> arguments, std::string& response) {
+    (void)arguments;
+
+    cmdLine.println("Rebooting MCU...");
+    delay(20);
+    NVIC_SystemReset();
 }
 
 void exitCommandMode(std::queue<std::string> arguments, std::string& response) {
@@ -120,6 +128,8 @@ void printStatus(std::queue<std::string> arguments, std::string& response) {
     cmdLine.println(floatToString(dataSaver.getLastDataPoint().data));
     cmdLine.print("Super loop average hz: ");
     cmdLine.println(floatToString(loop_count / (millis() / 1000 - start_time_s)));
+    cmdLine.print("Longest loop time (ms): ");
+    cmdLine.println(floatToString(longestLoopTime_ms));
 
     cmdLine.println("");
     cmdLine.println("--Flash--");
