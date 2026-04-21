@@ -28,6 +28,7 @@
 #include "state_estimation/ApogeePredictor.h"
 #include "state_estimation/States.h"
 #include "state_estimation/StateMachine.h" 
+#include "state_estimation/OrientationEstimator.h"
 #include "PowerManagement.h"
 
 #define SEALEVELPRESSURE_HPA (1013.25)
@@ -73,6 +74,12 @@ SensorDataHandler currentState(CURRENT_STATE, &dataSaver);
 SensorDataHandler flightIDSaver(FLIGHT_ID, &dataSaver);
 float flightID;
 
+//Orientation Estimation
+SensorDataHandler rollData(ROLL, &dataSaver);
+SensorDataHandler pitchData(PITCH, &dataSaver);
+SensorDataHandler yawData(YAW, &dataSaver);
+OrientationEstimator orientationEstimator;
+
 NoiseVariances noiseVariances {0.25f, 1.0f}; // Example variances
 
 VerticalVelocityEstimator verticalVelocityEstimator(noiseVariances);
@@ -91,6 +98,7 @@ StateMachine stateMachine(&dataSaver, &launchDetector, &apogeeDetector, &vertica
 const std::array<SensorDataHandler*, 3> acclDataArray = {&xAclData, &yAclData, &zAclData};
 const std::array<SensorDataHandler*, 3> gyroDataArray = {&xGyroData, &yGyroData, &zGyroData};
 const std::array<SensorDataHandler*, 3> magDataArray = {&xMagData, &yMagData, &zMagData};
+const std::array<SensorDataHandler*, 3> orientationDataArray = {&rollData, &pitchData, &yawData};
 
 SendableSensorData aclDataSSD(acclDataArray, 102, 5);
 SendableSensorData gyroDataSSD(gyroDataArray, 105, 5);
@@ -104,8 +112,9 @@ SendableSensorData currentStateSSD(&currentState, 1);
 SendableSensorData flightIDSaverSSD(&flightIDSaver, 1);
 SendableSensorData estVerticalVelocitySSD(&estVerticalVelocity, 1);
 SendableSensorData voltageDataSSD(&voltageData, 1);
+SendableSensorData orientationDataSSD(orientationDataArray, 120, 10);
 
-const std::array <SendableSensorData*, 12> ssds = {
+const std::array <SendableSensorData*, 13> ssds = {
   &aclDataSSD,
   &gyroDataSSD,
   &altitudeDataSSD,
@@ -117,7 +126,8 @@ const std::array <SendableSensorData*, 12> ssds = {
   &currentStateSSD,
   &flightIDSaverSSD,
   &estVerticalVelocitySSD,
-  &voltageDataSSD
+  &voltageDataSSD,
+  &orientationDataSSD
 };
 
 CommandLine cmdLine(&Serial);
@@ -236,6 +246,9 @@ void setup() {
   apogeeEstData.restrictSaveSpeed(10);
   currentState.restrictSaveSpeed(2000);
   voltageData.restrictSaveSpeed(2000);
+  rollData.restrictSaveSpeed(100);
+  pitchData.restrictSaveSpeed(100);
+  yawData.restrictSaveSpeed(100);
 
 
   // Loop start time
@@ -305,11 +318,15 @@ void loop() {
 
   mag.getEvent(&mag_event);
 
-  xMagData.addData(DataPoint(current_time, mag_event.magnetic.x));
-  yMagData.addData(DataPoint(current_time, mag_event.magnetic.y));
-  zMagData.addData(DataPoint(current_time, mag_event.magnetic.z));
+  DataPoint xMagDataPoint(current_time, mag_event.magnetic.x);
+  DataPoint yMagDataPoint(current_time, mag_event.magnetic.y);
+  DataPoint zMagDataPoint(current_time, mag_event.magnetic.z);
+  
+  xMagData.addData(xMagDataPoint);
+  yMagData.addData(yMagDataPoint);
+  zMagData.addData(zMagDataPoint);
 
-
+  MagTriplet magTriplet = {xMagDataPoint, yMagDataPoint, zMagDataPoint};
 
   // Check periodically if a new reading is available
   if (bmp.updateConversion()) {
@@ -368,13 +385,28 @@ void loop() {
     apogeeEstData.addData(DataPoint(current_time, apogeePredictor.getPredictedApogeeAltitude_m()));
   }
   
-  xGyroData.addData(DataPoint(current_time, gyro.gyro.x));
-  yGyroData.addData(DataPoint(current_time, gyro.gyro.y));
-  zGyroData.addData(DataPoint(current_time, gyro.gyro.z));
+  DataPoint xgyroDataPoint(current_time, gyro.gyro.x);
+  DataPoint ygyroDataPoint(current_time, gyro.gyro.y);
+  DataPoint zgyroDataPoint(current_time, gyro.gyro.z);
+  
+  xGyroData.addData(xgyroDataPoint);
+  yGyroData.addData(ygyroDataPoint);
+  zGyroData.addData(zgyroDataPoint);
+
+  GyroTriplet gyroTriplet = {xgyroDataPoint, ygyroDataPoint, zgyroDataPoint};
 
   // Read and save battery voltage
   float voltage = adcVolt.readVoltage();
   voltageData.addData(DataPoint(current_time, voltage));
+
+  // Update orientation estimator and save roll, pitch, yaw
+  if (stateMachine.getState() >= STATE_ASCENT) {
+    orientationEstimator.launchDetected();
+  }
+  orientationEstimator.update(aclTriplet, gyroTriplet, magTriplet, current_time);
+  rollData.addData(DataPoint(current_time, orientationEstimator.getRoll()));
+  pitchData.addData(DataPoint(current_time, orientationEstimator.getPitch()));
+  yawData.addData(DataPoint(current_time, orientationEstimator.getYaw()));
 
   superLoopRate.addData(DataPoint(current_time, loop_count / (millis() / 1000 - start_time_s)));
   currentState.addData(DataPoint(current_time, stateMachine.getState()));
