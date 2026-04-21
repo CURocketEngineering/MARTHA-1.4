@@ -78,7 +78,7 @@ float flightID;
 SensorDataHandler rollData(ROLL, &dataSaver);
 SensorDataHandler pitchData(PITCH, &dataSaver);
 SensorDataHandler yawData(YAW, &dataSaver);
-OrientationEstimator orientationEstimator(0.08f);
+OrientationEstimator orientationEstimator;
 
 NoiseVariances noiseVariances {0.25f, 1.0f}; // Example variances
 
