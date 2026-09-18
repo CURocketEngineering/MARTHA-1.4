@@ -138,7 +138,7 @@ float longestLoopTime_ms = 0;
 #ifdef USB_RADIO  // Redirects Radio output to USB Serial instead of hardware UART, for direct ground station testing without needing the radio
 Telemetry telemetry(ssds, Serial, &cmdLine);
 #else
-HardwareSerial SUART1(PB7, PB6);
+Uart SUART1(PB7, PB6);
 Telemetry telemetry(ssds, SUART1, &cmdLine);
 #endif
 
